@@ -30,7 +30,7 @@ jobs:
         env:
           PROXY_NODE: ${{ secrets.PROXY_NODE }}
         run: |
-          if[ -z "$PROXY_NODE" ]; then
+          if [ -z "$PROXY_NODE" ]; then
             echo "[INFO] 未配置代理，直连模式"
             exit 0
           fi
@@ -105,10 +105,10 @@ jobs:
               security = params.get("security",["none"])[0]
               network = params.get("type", ["tcp"])[0]
               sni = params.get("sni",[address])[0]
-              fp = params.get("fp", ["chrome"])[0]
+              fp = params.get("fp",["chrome"])[0]
               flow = params.get("flow", [""])[0]
               pbk = params.get("pbk",[""])[0]
-              host = params.get("host", [sni])[0]
+              host = params.get("host",[sni])[0]
               path = unquote(params.get("path", ["/"])[0])
 
               print(f"[INFO] VLESS -> {mask(address)}:{port} (security: {security}, network: {network})")
@@ -338,7 +338,7 @@ jobs:
       - name: 清理 Chrome 锁文件
         run: |
           PROFILE_DIR="browser_state/selenium_profile"
-          if[ -d "$PROFILE_DIR" ]; then
+          if [ -d "$PROFILE_DIR" ]; then
             echo "🧹 清理浏览器锁文件..."
             find "$PROFILE_DIR" -name "SingletonLock" -delete 2>/dev/null || true
             find "$PROFILE_DIR" -name "SingletonSocket" -delete 2>/dev/null || true
@@ -405,7 +405,7 @@ jobs:
         if: success()
         run: |
           DUE_DATE=$(grep -oP '到期时间\(标准\): \K\d{4}-\d{2}-\d{2}' renew.log | tail -1 || echo "")
-          if[ -z "$DUE_DATE" ]; then
+          if [ -z "$DUE_DATE" ]; then
             echo "skip_update=true" >> $GITHUB_OUTPUT
             echo "::warning::未能提取到期时间，跳过 Cron 更新"
             exit 0
