@@ -82,11 +82,11 @@ jobs:
 
           config = {
               "log": {"loglevel": "warning"},
-              "inbounds": [
+              "inbounds":[
                   {"port": 1080, "listen": "127.0.0.1", "protocol": "socks", "settings": {"udp": True}},
                   {"port": 1081, "listen": "127.0.0.1", "protocol": "http"}
               ],
-              "outbounds": []
+              "outbounds":[]
           }
 
           if protocol == "vless":
@@ -104,10 +104,10 @@ jobs:
               params = parse_qs(params_str)
               security = params.get("security", ["none"])[0]
               network = params.get("type", ["tcp"])[0]
-              sni = params.get("sni", [address])[0]
+              sni = params.get("sni",[address])[0]
               fp = params.get("fp", ["chrome"])[0]
               flow = params.get("flow", [""])[0]
-              pbk = params.get("pbk", [""])[0]
+              pbk = params.get("pbk",[""])[0]
               host = params.get("host", [sni])[0]
               path = unquote(params.get("path", ["/"])[0])
 
@@ -119,7 +119,7 @@ jobs:
                       "vnext": [{
                           "address": address,
                           "port": int(port),
-                          "users": [{"id": uuid, "encryption": "none"}]
+                          "users":[{"id": uuid, "encryption": "none"}]
                       }]
                   },
                   "streamSettings": {
@@ -184,7 +184,7 @@ jobs:
               outbound = {
                   "protocol": "vmess",
                   "settings": {
-                      "vnext": [{
+                      "vnext":[{
                           "address": address,
                           "port": port,
                           "users": [{"id": uuid, "alterId": aid, "security": "auto"}]
@@ -235,7 +235,7 @@ jobs:
               outbound = {
                   "protocol": "trojan",
                   "settings": {
-                      "servers": [{
+                      "servers":[{
                           "address": address,
                           "port": int(port),
                           "password": password
@@ -284,7 +284,7 @@ jobs:
               outbound = {
                   "protocol": "shadowsocks",
                   "settings": {
-                      "servers": [{
+                      "servers":[{
                           "address": address,
                           "port": int(port),
                           "method": method,
@@ -301,7 +301,7 @@ jobs:
           print("[INFO] ✅ 代理配置已生成")
           PYEOF
 
-          if [ -f "use_external_socks.txt" ]; then
+          if[ -f "use_external_socks.txt" ]; then
             EXTERNAL_SOCKS=$(cat use_external_socks.txt)
             echo "PROXY_SERVER=$EXTERNAL_SOCKS" >> $GITHUB_ENV
             echo "[INFO] ✅ 使用外部 SOCKS5 代理"
@@ -338,7 +338,7 @@ jobs:
       - name: 清理 Chrome 锁文件
         run: |
           PROFILE_DIR="browser_state/selenium_profile"
-          if [ -d "$PROFILE_DIR" ]; then
+          if[ -d "$PROFILE_DIR" ]; then
             echo "🧹 清理浏览器锁文件..."
             find "$PROFILE_DIR" -name "SingletonLock" -delete 2>/dev/null || true
             find "$PROFILE_DIR" -name "SingletonSocket" -delete 2>/dev/null || true
@@ -358,16 +358,16 @@ jobs:
         run: |
           python3 main.py 2>&1 | tee renew.log
 
-     # 如需上传日志截图，可取消注释以下步骤
-     # - name: 上传日志和截图
-     #   if: always()
-     #   uses: actions/upload-artifact@v4
-     #   with:
-     #     name: hidencloud-logs
-     #     path: |
-     #       screenshots/*.png
-     #       renew.log
-     #     retention-days: 3
+      # 👇 开启了日志和截图上传，排错神器
+      - name: 上传日志和截图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hidencloud-logs
+          path: |
+            screenshots/*.png
+            renew.log
+          retention-days: 3
 
       - name: 删除旧浏览器状态缓存
         if: always()
@@ -379,7 +379,7 @@ jobs:
           PREFIX="hidencloud-state-"
           CACHE_KEYS=$(gh cache list --limit 100 --json key -q '.[].key' --repo ${{ github.repository }} | grep "^${PREFIX}" || true)
 
-          if [ -z "$CACHE_KEYS" ]; then
+          if[ -z "$CACHE_KEYS" ]; then
             echo "没有找到旧缓存"
           else
             echo "找到以下缓存:"
@@ -432,7 +432,7 @@ jobs:
 
           REMAINING_HOURS_INT=$((REMAINING_SECONDS / 3600))
 
-          if [ "$REMAINING_HOURS_INT" -gt 20 ]; then
+          if[ "$REMAINING_HOURS_INT" -gt 20 ]; then
             HOURS_UNTIL_NEXT_RUN=$((REMAINING_HOURS_INT - 20))
           else
             HOURS_UNTIL_NEXT_RUN=4
