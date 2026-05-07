@@ -30,7 +30,7 @@ jobs:
         env:
           PROXY_NODE: ${{ secrets.PROXY_NODE }}
         run: |
-          if [ -z "$PROXY_NODE" ]; then
+          if[ -z "$PROXY_NODE" ]; then
             echo "[INFO] 未配置代理，直连模式"
             exit 0
           fi
@@ -405,7 +405,7 @@ jobs:
         if: success()
         run: |
           DUE_DATE=$(grep -oP '到期时间\(标准\): \K\d{4}-\d{2}-\d{2}' renew.log | tail -1 || echo "")
-          if [ -z "$DUE_DATE" ]; then
+          if[ -z "$DUE_DATE" ]; then
             echo "skip_update=true" >> $GITHUB_OUTPUT
             echo "::warning::未能提取到期时间，跳过 Cron 更新"
             exit 0
@@ -431,7 +431,7 @@ jobs:
 
           REMAINING_HOURS_INT=$((REMAINING_SECONDS / 3600))
 
-          if [ "$REMAINING_HOURS_INT" -gt 20 ]; then
+          if[ "$REMAINING_HOURS_INT" -gt 20 ]; then
             HOURS_UNTIL_NEXT_RUN=$((REMAINING_HOURS_INT - 20))
           else
             HOURS_UNTIL_NEXT_RUN=4
@@ -456,7 +456,7 @@ jobs:
 
           LINE_NUM=$(grep -n "cron: '" "$WORKFLOW_FILE" | head -n1 | cut -d: -f1)
 
-          if [ -z "$LINE_NUM" ]; then
+          if[ -z "$LINE_NUM" ]; then
             echo "::error::找不到 cron 行"
             exit 1
           fi
