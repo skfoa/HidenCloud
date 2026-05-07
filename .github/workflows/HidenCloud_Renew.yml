@@ -102,7 +102,7 @@ jobs:
                   address, port = host_port, "443"
 
               params = parse_qs(params_str)
-              security = params.get("security", ["none"])[0]
+              security = params.get("security",["none"])[0]
               network = params.get("type", ["tcp"])[0]
               sni = params.get("sni",[address])[0]
               fp = params.get("fp", ["chrome"])[0]
@@ -116,7 +116,7 @@ jobs:
               outbound = {
                   "protocol": "vless",
                   "settings": {
-                      "vnext": [{
+                      "vnext":[{
                           "address": address,
                           "port": int(port),
                           "users":[{"id": uuid, "encryption": "none"}]
@@ -187,7 +187,7 @@ jobs:
                       "vnext":[{
                           "address": address,
                           "port": port,
-                          "users": [{"id": uuid, "alterId": aid, "security": "auto"}]
+                          "users":[{"id": uuid, "alterId": aid, "security": "auto"}]
                       }]
                   },
                   "streamSettings": {
@@ -301,7 +301,7 @@ jobs:
           print("[INFO] ✅ 代理配置已生成")
           PYEOF
 
-          if[ -f "use_external_socks.txt" ]; then
+          if [ -f "use_external_socks.txt" ]; then
             EXTERNAL_SOCKS=$(cat use_external_socks.txt)
             echo "PROXY_SERVER=$EXTERNAL_SOCKS" >> $GITHUB_ENV
             echo "[INFO] ✅ 使用外部 SOCKS5 代理"
@@ -358,7 +358,6 @@ jobs:
         run: |
           python3 main.py 2>&1 | tee renew.log
 
-      # 👇 开启了日志和截图上传，排错神器
       - name: 上传日志和截图
         if: always()
         uses: actions/upload-artifact@v4
@@ -379,7 +378,7 @@ jobs:
           PREFIX="hidencloud-state-"
           CACHE_KEYS=$(gh cache list --limit 100 --json key -q '.[].key' --repo ${{ github.repository }} | grep "^${PREFIX}" || true)
 
-          if[ -z "$CACHE_KEYS" ]; then
+          if [ -z "$CACHE_KEYS" ]; then
             echo "没有找到旧缓存"
           else
             echo "找到以下缓存:"
@@ -432,7 +431,7 @@ jobs:
 
           REMAINING_HOURS_INT=$((REMAINING_SECONDS / 3600))
 
-          if[ "$REMAINING_HOURS_INT" -gt 20 ]; then
+          if [ "$REMAINING_HOURS_INT" -gt 20 ]; then
             HOURS_UNTIL_NEXT_RUN=$((REMAINING_HOURS_INT - 20))
           else
             HOURS_UNTIL_NEXT_RUN=4
