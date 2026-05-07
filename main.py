@@ -14,6 +14,9 @@ TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "")
 TG_CHAT_ID = os.getenv("TG_CHAT_ID", "")
 PROXY_SERVER = os.getenv("PROXY_SERVER", "")
 
+# 👇 手动配置固定的服务器 ID (默认 211278)
+TARGET_SERVER_ID = os.getenv("SERVER_ID", "211278")
+
 if "-----" in HIDENCLOUD:
     HIDEN_EMAIL, HIDEN_PWD = HIDENCLOUD.split("-----", 1)
 else:
@@ -33,7 +36,6 @@ USER_DATA_DIR = os.path.abspath(os.path.join(STATE_DIR, "selenium_profile"))
 def get_bj_time():
     """返回北京时间字符串"""
     return (datetime.now(timezone.utc) + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
-
 
 def send_tg_notification(message, photo_path=None):
     """发送 Telegram 通知，可附带截图"""
@@ -55,7 +57,6 @@ def send_tg_notification(message, photo_path=None):
     except Exception as e:
         print(f"[ERROR] TG 发送失败: {e}")
 
-
 def take_screenshot(driver, name):
     """截图并返回文件路径"""
     timestamp = datetime.now().strftime('%H%M%S')
@@ -66,7 +67,6 @@ def take_screenshot(driver, name):
     except Exception as e:
         print(f"[WARN] 截图失败: {e}")
     return filename
-
 
 def wait_for_turnstile_token(driver, timeout=90):
     """等待 Cloudflare Turnstile token 生成"""
@@ -82,7 +82,6 @@ def wait_for_turnstile_token(driver, timeout=90):
         time.sleep(1)
     return False
 
-
 def wait_for_url_contains(driver, keyword, timeout=45):
     """等待当前 URL 包含特定关键字"""
     start = time.time()
@@ -92,11 +91,10 @@ def wait_for_url_contains(driver, keyword, timeout=45):
         time.sleep(0.5)
     return False
 
-
 def check_login_error(driver):
     """检查页面是否有登录错误信息"""
     try:
-        error_selectors = [
+        error_selectors =[
             ".text-red-500", ".alert-danger", "[role='alert']", ".error", ".invalid-feedback"
         ]
         for sel in error_selectors:
@@ -107,14 +105,12 @@ def check_login_error(driver):
         pass
     return None
 
-
 def mask_email(email):
     """邮箱脱敏显示"""
     if '@' in email:
         local, domain = email.split('@', 1)
         return f"{local[:3]}***@{domain}"
     return f"{email[:3]}***"
-
 
 def parse_due_date(text):
     """将页面显示的日期字符串转换为 YYYY-MM-DD 格式"""
@@ -133,7 +129,6 @@ def parse_due_date(text):
     if re.match(r'\d{4}-\d{2}-\d{2}', text):
         return text
     return None
-
 
 def get_current_due_date(driver):
     """获取当前管理页面的到期时间，返回原始字符串和标准化日期"""
@@ -158,14 +153,16 @@ def main():
 
     # ---------- 浏览器驱动配置 ----------
     driver_kwargs = {
-        "headless": True,
         "headless2": True,
         "uc": True,
         "user_data_dir": USER_DATA_DIR,
         "window_size": "1280,753",
         "disable_csp": True,
-        "agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+        "no_sandbox": True,                          # 必须开启：禁用沙盒机制
+        "disable_gpu": True,                         # 必须开启：禁用 GPU 硬件加速
+        "chromium_arg": "--disable-dev-shm-usage"    # 核心修复：防止 /dev/shm 内存不足导致崩溃
     }
+    
     if PROXY_SERVER:
         driver_kwargs["proxy"] = PROXY_SERVER
         print(f"[INFO] 🌐 使用代理: {PROXY_SERVER}")
@@ -187,7 +184,7 @@ def main():
     due_date_before_std = None
     due_date_after_raw = "N/A"
     due_date_after_std = None
-    sid = None
+    sid = TARGET_SERVER_ID
 
     try:
         # ---------- 1. 访问主页 ----------
@@ -248,17 +245,15 @@ def main():
             print("[INFO] ✅ 已登录，跳过登录流程")
             take_screenshot(driver, "02-already-logged-in")
 
-        # ---------- 3. 提取服务器 ID (已改为手动指定模式) ----------
-        print("[INFO] 🔍 正在进入服务器管理逻辑...")
+        # ---------- 3. 进入服务器管理页面 ----------
+        print(f"[INFO] 🔍 准备进入服务器管理逻辑...")
         take_screenshot(driver, "08-dashboard")
         time.sleep(3)
         
-        # 手动指定 ID，跳过不稳定的 DOM 爬取
-        sid = "211278"
         print(f"[INFO] ✅ 已手动指定服务器 ID: {sid}")
 
         manage_url = f"{BASE_URL}/service/{sid}/manage"
-        print(f"[INFO] 🚀 访问管理页面: {BASE_URL}/service/{sid}/manage")
+        print(f"[INFO] 🚀 访问管理页面: {manage_url}")
         driver.get(manage_url)
         time.sleep(3)
         take_screenshot(driver, "09-manage-page")
@@ -444,7 +439,6 @@ def main():
         raise
     finally:
         driver.quit()
-
 
 if __name__ == "__main__":
     main()
