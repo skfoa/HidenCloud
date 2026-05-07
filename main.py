@@ -248,28 +248,17 @@ def main():
             print("[INFO] ✅ 已登录，跳过登录流程")
             take_screenshot(driver, "02-already-logged-in")
 
-        # ---------- 3. 提取服务器 ID ----------
-        print("[INFO] 🔍 提取服务器 ID...")
+        # ---------- 3. 提取服务器 ID (已改为手动指定模式) ----------
+        print("[INFO] 🔍 正在进入服务器管理逻辑...")
         take_screenshot(driver, "08-dashboard")
         time.sleep(3)
-
-        try:
-            element = driver.find_element("xpath", "//span[contains(text(),'Free Server #')]")
-            text = element.text.strip()
-            print("[INFO] 找到服务器文本: Free Server #***")
-            match = re.search(r'Free Server #(\d+)', text)
-            if match:
-                sid = match.group(1)
-                print("[INFO] ✅ 提取到服务器 ID: ***")
-        except Exception as e:
-            print(f"[ERROR] 页面元素定位失败: {e}")
-
-        if not sid:
-            take_screenshot(driver, "ERROR-no-server-id")
-            raise Exception("无法提取服务器 ID")
+        
+        # 手动指定 ID，跳过不稳定的 DOM 爬取
+        sid = "211278"
+        print(f"[INFO] ✅ 已手动指定服务器 ID: {sid}")
 
         manage_url = f"{BASE_URL}/service/{sid}/manage"
-        print(f"[INFO] 🚀 访问管理页面: {BASE_URL}/service/***/manage")
+        print(f"[INFO] 🚀 访问管理页面: {BASE_URL}/service/{sid}/manage")
         driver.get(manage_url)
         time.sleep(3)
         take_screenshot(driver, "09-manage-page")
