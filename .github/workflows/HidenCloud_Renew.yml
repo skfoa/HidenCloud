@@ -30,7 +30,7 @@ jobs:
         env:
           PROXY_NODE: ${{ secrets.PROXY_NODE }}
         run: |
-          if[ -z "$PROXY_NODE" ]; then
+          if [ -z "$PROXY_NODE" ]; then
             echo "[INFO] 未配置代理，直连模式"
             exit 0
           fi
@@ -82,11 +82,11 @@ jobs:
 
           config = {
               "log": {"loglevel": "warning"},
-              "inbounds":[
+              "inbounds": [
                   {"port": 1080, "listen": "127.0.0.1", "protocol": "socks", "settings": {"udp": True}},
                   {"port": 1081, "listen": "127.0.0.1", "protocol": "http"}
               ],
-              "outbounds":[]
+              "outbounds": []
           }
 
           if protocol == "vless":
@@ -102,13 +102,13 @@ jobs:
                   address, port = host_port, "443"
 
               params = parse_qs(params_str)
-              security = params.get("security",["none"])[0]
+              security = params.get("security", ["none"])[0]
               network = params.get("type", ["tcp"])[0]
-              sni = params.get("sni",[address])[0]
-              fp = params.get("fp",["chrome"])[0]
+              sni = params.get("sni", [address])[0]
+              fp = params.get("fp", ["chrome"])[0]
               flow = params.get("flow", [""])[0]
-              pbk = params.get("pbk",[""])[0]
-              host = params.get("host",[sni])[0]
+              pbk = params.get("pbk", [""])[0]
+              host = params.get("host", [sni])[0]
               path = unquote(params.get("path", ["/"])[0])
 
               print(f"[INFO] VLESS -> {mask(address)}:{port} (security: {security}, network: {network})")
@@ -116,10 +116,10 @@ jobs:
               outbound = {
                   "protocol": "vless",
                   "settings": {
-                      "vnext":[{
+                      "vnext": [{
                           "address": address,
                           "port": int(port),
-                          "users":[{"id": uuid, "encryption": "none"}]
+                          "users": [{"id": uuid, "encryption": "none"}]
                       }]
                   },
                   "streamSettings": {
@@ -184,10 +184,10 @@ jobs:
               outbound = {
                   "protocol": "vmess",
                   "settings": {
-                      "vnext":[{
+                      "vnext": [{
                           "address": address,
                           "port": port,
-                          "users":[{"id": uuid, "alterId": aid, "security": "auto"}]
+                          "users": [{"id": uuid, "alterId": aid, "security": "auto"}]
                       }]
                   },
                   "streamSettings": {
@@ -235,7 +235,7 @@ jobs:
               outbound = {
                   "protocol": "trojan",
                   "settings": {
-                      "servers":[{
+                      "servers": [{
                           "address": address,
                           "port": int(port),
                           "password": password
@@ -284,7 +284,7 @@ jobs:
               outbound = {
                   "protocol": "shadowsocks",
                   "settings": {
-                      "servers":[{
+                      "servers": [{
                           "address": address,
                           "port": int(port),
                           "method": method,
@@ -301,7 +301,7 @@ jobs:
           print("[INFO] ✅ 代理配置已生成")
           PYEOF
 
-          if[ -f "use_external_socks.txt" ]; then
+          if [ -f "use_external_socks.txt" ]; then
             EXTERNAL_SOCKS=$(cat use_external_socks.txt)
             echo "PROXY_SERVER=$EXTERNAL_SOCKS" >> $GITHUB_ENV
             echo "[INFO] ✅ 使用外部 SOCKS5 代理"
@@ -358,15 +358,16 @@ jobs:
         run: |
           python3 main.py 2>&1 | tee renew.log
 
-      - name: 上传日志和截图
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: hidencloud-logs
-          path: |
-            screenshots/*.png
-            renew.log
-          retention-days: 3
+     # 如需上传日志截图，可取消注释以下步骤
+     # - name: 上传日志和截图
+     #   if: always()
+     #   uses: actions/upload-artifact@v4
+     #   with:
+     #     name: hidencloud-logs
+     #     path: |
+     #       screenshots/*.png
+     #       renew.log
+     #     retention-days: 3
 
       - name: 删除旧浏览器状态缓存
         if: always()
@@ -431,7 +432,7 @@ jobs:
 
           REMAINING_HOURS_INT=$((REMAINING_SECONDS / 3600))
 
-          if[ "$REMAINING_HOURS_INT" -gt 20 ]; then
+          if [ "$REMAINING_HOURS_INT" -gt 20 ]; then
             HOURS_UNTIL_NEXT_RUN=$((REMAINING_HOURS_INT - 20))
           else
             HOURS_UNTIL_NEXT_RUN=4
