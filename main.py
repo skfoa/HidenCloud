@@ -68,6 +68,18 @@ def take_screenshot(driver, name):
         print(f"[WARN] 截图失败: {e}")
     return filename
 
+def check_network_crash(driver):
+    """【新增】检测是否遇到 ERR_EMPTY_RESPONSE 等代理断连白屏"""
+    try:
+        src = driver.page_source
+        if "ERR_EMPTY_RESPONSE" in src or "This page isn’t working" in src or "ERR_CONNECTION_CLOSED" in src:
+            take_screenshot(driver, "ERROR-NETWORK-CRASH")
+            print("[WARN] 检测到网页崩溃白屏...")
+            return True
+    except:
+        pass
+    return False
+
 def wait_for_turnstile_token(driver, timeout=90):
     """等待 Cloudflare Turnstile token 生成"""
     print("[INFO] ⏳ 等待 Turnstile 验证通过...")
@@ -191,6 +203,9 @@ def main():
         print(f"[INFO] 🌐 访问主页: {BASE_URL}/dashboard")
         driver.get(f"{BASE_URL}/dashboard")
         time.sleep(3)
+        if check_network_crash(driver):
+            driver.refresh()
+            time.sleep(5)
         take_screenshot(driver, "01-initial")
 
         # ---------- 2. 登录判断 ----------
@@ -254,8 +269,27 @@ def main():
 
         manage_url = f"{BASE_URL}/service/{sid}/manage"
         print(f"[INFO] 🚀 访问管理页面: {manage_url}")
-        driver.get(manage_url)
-        time.sleep(3)
+        
+        # 【新增】强力重试机制，防止跳转时遇到黑屏/白屏
+        page_loaded = False
+        for attempt in range(1, 4):
+            driver.get(manage_url)
+            time.sleep(5)
+            
+            src = driver.page_source
+            if check_network_crash(driver) or ("Due date" not in src and "Renew" not in src):
+                print(f"[WARN] 页面未完全加载或遭遇黑屏/白屏，准备刷新重试 (第 {attempt}/3 次)...")
+                take_screenshot(driver, f"09-manage-page-retry-{attempt}")
+                driver.refresh()
+                time.sleep(5)
+            else:
+                page_loaded = True
+                break
+                
+        if not page_loaded:
+            take_screenshot(driver, "ERROR-manage-page-black")
+            raise Exception("代理网络极度不稳定，多次尝试加载管理页面均失败(黑屏/白屏)。")
+
         take_screenshot(driver, "09-manage-page")
 
         # ---------- 4. 获取续订前到期时间 ----------
@@ -273,7 +307,7 @@ def main():
 
             # 定位 Renew 按钮
             renew_btn = None
-            selectors = [
+            selectors =[
                 ("css selector", "button[onclick*='showRenewAlert']"),
                 ("xpath", "//button[.//i[contains(@class, 'bx-recycle')]]"),
                 ("xpath", "//button[contains(text(),'Renew')]"),
@@ -380,7 +414,11 @@ def main():
 
         # ---------- 6. 获取续订后到期时间 ----------
         driver.get(manage_url)
-        time.sleep(3)
+        time.sleep(5)
+        if check_network_crash(driver):
+            driver.refresh()
+            time.sleep(5)
+            
         due_date_after_raw, due_date_after_std = get_current_due_date(driver)
         print(f"[INFO] 续订后到期时间: {due_date_after_raw}")
         final_screenshot = take_screenshot(driver, "16-final-due-date")
