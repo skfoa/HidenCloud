@@ -14,9 +14,6 @@ TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "")
 TG_CHAT_ID = os.getenv("TG_CHAT_ID", "")
 PROXY_SERVER = os.getenv("PROXY_SERVER", "")
 
-# 👇 手动配置固定的服务器 ID (默认 211278)
-TARGET_SERVER_ID = os.getenv("SERVER_ID", "211278")
-
 if "-----" in HIDENCLOUD:
     HIDEN_EMAIL, HIDEN_PWD = HIDENCLOUD.split("-----", 1)
 else:
@@ -36,6 +33,7 @@ USER_DATA_DIR = os.path.abspath(os.path.join(STATE_DIR, "selenium_profile"))
 def get_bj_time():
     """返回北京时间字符串"""
     return (datetime.now(timezone.utc) + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
+
 
 def send_tg_notification(message, photo_path=None):
     """发送 Telegram 通知，可附带截图"""
@@ -57,6 +55,7 @@ def send_tg_notification(message, photo_path=None):
     except Exception as e:
         print(f"[ERROR] TG 发送失败: {e}")
 
+
 def take_screenshot(driver, name):
     """截图并返回文件路径"""
     timestamp = datetime.now().strftime('%H%M%S')
@@ -68,17 +67,6 @@ def take_screenshot(driver, name):
         print(f"[WARN] 截图失败: {e}")
     return filename
 
-def check_network_crash(driver):
-    """【新增】检测是否遇到 ERR_EMPTY_RESPONSE 等代理断连白屏"""
-    try:
-        src = driver.page_source
-        if "ERR_EMPTY_RESPONSE" in src or "This page isn’t working" in src or "ERR_CONNECTION_CLOSED" in src:
-            take_screenshot(driver, "ERROR-NETWORK-CRASH")
-            print("[WARN] 检测到网页崩溃白屏...")
-            return True
-    except:
-        pass
-    return False
 
 def wait_for_turnstile_token(driver, timeout=90):
     """等待 Cloudflare Turnstile token 生成"""
@@ -94,6 +82,7 @@ def wait_for_turnstile_token(driver, timeout=90):
         time.sleep(1)
     return False
 
+
 def wait_for_url_contains(driver, keyword, timeout=45):
     """等待当前 URL 包含特定关键字"""
     start = time.time()
@@ -103,10 +92,11 @@ def wait_for_url_contains(driver, keyword, timeout=45):
         time.sleep(0.5)
     return False
 
+
 def check_login_error(driver):
     """检查页面是否有登录错误信息"""
     try:
-        error_selectors =[
+        error_selectors = [
             ".text-red-500", ".alert-danger", "[role='alert']", ".error", ".invalid-feedback"
         ]
         for sel in error_selectors:
@@ -117,12 +107,14 @@ def check_login_error(driver):
         pass
     return None
 
+
 def mask_email(email):
     """邮箱脱敏显示"""
     if '@' in email:
         local, domain = email.split('@', 1)
         return f"{local[:3]}***@{domain}"
     return f"{email[:3]}***"
+
 
 def parse_due_date(text):
     """将页面显示的日期字符串转换为 YYYY-MM-DD 格式"""
@@ -141,6 +133,7 @@ def parse_due_date(text):
     if re.match(r'\d{4}-\d{2}-\d{2}', text):
         return text
     return None
+
 
 def get_current_due_date(driver):
     """获取当前管理页面的到期时间，返回原始字符串和标准化日期"""
@@ -165,16 +158,14 @@ def main():
 
     # ---------- 浏览器驱动配置 ----------
     driver_kwargs = {
+        "headless": True,
         "headless2": True,
         "uc": True,
         "user_data_dir": USER_DATA_DIR,
         "window_size": "1280,753",
         "disable_csp": True,
-        "no_sandbox": True,                          # 必须开启：禁用沙盒机制
-        "disable_gpu": True,                         # 必须开启：禁用 GPU 硬件加速
-        "chromium_arg": "--disable-dev-shm-usage"    # 核心修复：防止 /dev/shm 内存不足导致崩溃
+        "agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
     }
-    
     if PROXY_SERVER:
         driver_kwargs["proxy"] = PROXY_SERVER
         print(f"[INFO] 🌐 使用代理: {PROXY_SERVER}")
@@ -196,16 +187,13 @@ def main():
     due_date_before_std = None
     due_date_after_raw = "N/A"
     due_date_after_std = None
-    sid = TARGET_SERVER_ID
+    sid = None
 
     try:
         # ---------- 1. 访问主页 ----------
         print(f"[INFO] 🌐 访问主页: {BASE_URL}/dashboard")
         driver.get(f"{BASE_URL}/dashboard")
         time.sleep(3)
-        if check_network_crash(driver):
-            driver.refresh()
-            time.sleep(5)
         take_screenshot(driver, "01-initial")
 
         # ---------- 2. 登录判断 ----------
@@ -260,36 +248,30 @@ def main():
             print("[INFO] ✅ 已登录，跳过登录流程")
             take_screenshot(driver, "02-already-logged-in")
 
-        # ---------- 3. 进入服务器管理页面 ----------
-        print(f"[INFO] 🔍 准备进入服务器管理逻辑...")
+        # ---------- 3. 提取服务器 ID ----------
+        print("[INFO] 🔍 提取服务器 ID...")
         take_screenshot(driver, "08-dashboard")
         time.sleep(3)
-        
-        print(f"[INFO] ✅ 已手动指定服务器 ID: {sid}")
+
+        try:
+            element = driver.find_element("xpath", "//span[contains(text(),'Free Server #')]")
+            text = element.text.strip()
+            print("[INFO] 找到服务器文本: Free Server #***")
+            match = re.search(r'Free Server #(\d+)', text)
+            if match:
+                sid = match.group(1)
+                print("[INFO] ✅ 提取到服务器 ID: ***")
+        except Exception as e:
+            print(f"[ERROR] 页面元素定位失败: {e}")
+
+        if not sid:
+            take_screenshot(driver, "ERROR-no-server-id")
+            raise Exception("无法提取服务器 ID")
 
         manage_url = f"{BASE_URL}/service/{sid}/manage"
-        print(f"[INFO] 🚀 访问管理页面: {manage_url}")
-        
-        # 【新增】强力重试机制，防止跳转时遇到黑屏/白屏
-        page_loaded = False
-        for attempt in range(1, 4):
-            driver.get(manage_url)
-            time.sleep(5)
-            
-            src = driver.page_source
-            if check_network_crash(driver) or ("Due date" not in src and "Renew" not in src):
-                print(f"[WARN] 页面未完全加载或遭遇黑屏/白屏，准备刷新重试 (第 {attempt}/3 次)...")
-                take_screenshot(driver, f"09-manage-page-retry-{attempt}")
-                driver.refresh()
-                time.sleep(5)
-            else:
-                page_loaded = True
-                break
-                
-        if not page_loaded:
-            take_screenshot(driver, "ERROR-manage-page-black")
-            raise Exception("代理网络极度不稳定，多次尝试加载管理页面均失败(黑屏/白屏)。")
-
+        print(f"[INFO] 🚀 访问管理页面: {BASE_URL}/service/***/manage")
+        driver.get(manage_url)
+        time.sleep(3)
         take_screenshot(driver, "09-manage-page")
 
         # ---------- 4. 获取续订前到期时间 ----------
@@ -307,7 +289,7 @@ def main():
 
             # 定位 Renew 按钮
             renew_btn = None
-            selectors =[
+            selectors = [
                 ("css selector", "button[onclick*='showRenewAlert']"),
                 ("xpath", "//button[.//i[contains(@class, 'bx-recycle')]]"),
                 ("xpath", "//button[contains(text(),'Renew')]"),
@@ -414,11 +396,7 @@ def main():
 
         # ---------- 6. 获取续订后到期时间 ----------
         driver.get(manage_url)
-        time.sleep(5)
-        if check_network_crash(driver):
-            driver.refresh()
-            time.sleep(5)
-            
+        time.sleep(3)
         due_date_after_raw, due_date_after_std = get_current_due_date(driver)
         print(f"[INFO] 续订后到期时间: {due_date_after_raw}")
         final_screenshot = take_screenshot(driver, "16-final-due-date")
@@ -477,6 +455,7 @@ def main():
         raise
     finally:
         driver.quit()
+
 
 if __name__ == "__main__":
     main()
