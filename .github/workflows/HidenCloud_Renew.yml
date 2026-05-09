@@ -30,7 +30,7 @@ jobs:
         env:
           PROXY_NODE: ${{ secrets.PROXY_NODE }}
         run: |
-          if [ -z "$PROXY_NODE" ]; then
+          if[ -z "$PROXY_NODE" ]; then
             echo "[INFO] 未配置代理，直连模式"
             exit 0
           fi
@@ -301,7 +301,7 @@ jobs:
           print("[INFO] ✅ 代理配置已生成")
           PYEOF
 
-          if [ -f "use_external_socks.txt" ]; then
+          if[ -f "use_external_socks.txt" ]; then
             EXTERNAL_SOCKS=$(cat use_external_socks.txt)
             echo "PROXY_SERVER=$EXTERNAL_SOCKS" >> $GITHUB_ENV
             echo "[INFO] ✅ 使用外部 SOCKS5 代理"
@@ -456,7 +456,7 @@ jobs:
 
           LINE_NUM=$(grep -n "cron: '" "$WORKFLOW_FILE" | head -n1 | cut -d: -f1)
 
-          if[ -z "$LINE_NUM" ]; then
+          if [ -z "$LINE_NUM" ]; then
             echo "::error::找不到 cron 行"
             exit 1
           fi
